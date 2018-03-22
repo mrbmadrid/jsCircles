@@ -83,9 +83,9 @@
 	{
 		var counter = 0;  //counts the number of circles created
 		var circles = [ ]; //array that will hold all the circles created in the app
-		if(mousedown) size++;
 		//a loop that updates the circle's position on the screen
 		this.loop = function(){
+			if(mousedown) size+=.25;
 			for(circle in circles)
 			{
 				circles[circle].update(1);
@@ -110,6 +110,7 @@
 	}
 
 	document.onmouseup = function (e) {
+		console.log(size);
 		playground.createNewCircle(e.x,e.y,size);
 		mousedown = false;
 		size = 10;
