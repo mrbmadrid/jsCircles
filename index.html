@@ -23,7 +23,6 @@
 	{
 		var html_id = html_id;
 		this.info = { cx: cx,  cy: cy, r: r };
-		
 		//private function that generates a random number
 		var randomNumberBetween = function(min, max){
 			return Math.random()*(max-min) + min;
@@ -40,7 +39,7 @@
 			var circle = makeSVG('circle', 
 				{ 	cx: this.info.cx,
 				  	cy: this.info.cy,
-				  	r:  r,
+				  	r:  this.info.r,
 				  	id: html_id,
 				  	style: "fill: black"
 				});
@@ -49,21 +48,25 @@
 		}
 
 		this.update = function(time){
-			var el = document.getElementById(html_id);
 
-			//see if the circle is going outside the browser. if it is, reverse the velocity
-			if( (this.info.cx+(2*this.info.r)) > document.body.clientWidth || (this.info.cx-(2*this.info.r)) < 0)
-			{
-				this.info.velocity.x = this.info.velocity.x * -1;
+			var el = document.getElementById(html_id);
+			if(this.info.r==0) el.remove();
+			else{
+				//see if the circle is going outside the browser. if it is, reverse the velocity
+				if( (this.info.cx+(this.info.r)) > document.body.clientWidth || (this.info.cx-(this.info.r)) < 0)
+				{
+					this.info.velocity.x = this.info.velocity.x * -1;
+				}
+				if( this.info.cy+(this.info.r) > document.body.clientHeight || this.info.cy-(this.info.r) < 0)
+				{
+					this.info.velocity.y = this.info.velocity.y * -1;
+				}
+				this.info.cx = this.info.cx + this.info.velocity.x*time;
+				this.info.cy = this.info.cy + this.info.velocity.y*time;
+				el.setAttribute("cx", this.info.cx);
+				el.setAttribute("cy", this.info.cy);
+				el.setAttribute("r", this.info.r);
 			}
-			if( this.info.cy+(2*this.info.r) > document.body.clientHeight || this.info.cy-(2*this.info.r) < 0)
-			{
-				this.info.velocity.y = this.info.velocity.y * -1;
-			}
-			this.info.cx = this.info.cx + this.info.velocity.x*time;
-			this.info.cy = this.info.cy + this.info.velocity.y*time;
-			el.setAttribute("cx", this.info.cx);
-			el.setAttribute("cy", this.info.cy);
 		}
 
 		//creates the SVG element and returns it
@@ -85,35 +88,53 @@
 		var circles = [ ]; //array that will hold all the circles created in the app
 		//a loop that updates the circle's position on the screen
 		this.loop = function(){
-			if(mousedown) size+=.25;
-			for(circle in circles)
-			{
-				circles[circle].update(1);
+			if(mousedown) size+=1; //make size larger if mouse is being held down
+			for(circle in circles){
+				if(circles[circle].info.r == 0){ //if circle has been absorbed by another circle
+					circles[circle].update(0); //allow circle svg to update and remove itself
+					circles.splice(circle, 1); //remove circle object
+				}else{
+					circles[circle].update(1);
+					var a = circles[circle];
+					for(c in circles){
+						var b = circles[c];
+						if(a !== b){ //if not the same circle check for collision
+							if(Math.sqrt(Math.pow(a.info.cx-b.info.cx, 2)+Math.pow(a.info.cy-b.info.cy, 2))<=a.info.r+b.info.r){
+								if(a.info.r >= b.info.r){ //larger circle absorbs smaller circle
+									a.info.r += b.info.r;
+									b.info.r=0;
+								}else{
+									b.info.r+=a.info.r;
+									a.info.r=0;
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 
 		this.createNewCircle = function(x,y,r){
 			var new_circle = new Circle(x,y,r,counter++);
 			circles.push(new_circle);
+			size = 0;
 			// console.log('created a new circle!', new_circle);
 		}
 
 		//create one circle when the game starts
-		this.createNewCircle(document.body.clientWidth, document.body.clientHeight);
+		this.createNewCircle(document.body.clientWidth/2, document.body.clientHeight/2, 10);
 	}
 
 	var playground = new PlayGround();
 	setInterval(playground.loop, 15);
 
-	document.onclick = function(e) {
+	document.onmousedown = function(e) {
 		mousedown = true;
 	}
 
 	document.onmouseup = function (e) {
-		console.log(size);
-		playground.createNewCircle(e.x,e.y,size);
 		mousedown = false;
-		size = 10;
+		playground.createNewCircle(e.x,e.y,size);
 	}
 	
 	</script>
